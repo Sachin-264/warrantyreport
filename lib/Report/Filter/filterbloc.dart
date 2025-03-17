@@ -32,6 +32,8 @@ class FetchItemDetailsEvent extends FilterEvent {
   List<Object?> get props => [billNumber];
 }
 
+class ResetFormEvent extends FilterEvent {}
+
 // States
 class FilterState extends Equatable {
   final bool isLoading;
@@ -70,8 +72,7 @@ class FilterState extends Equatable {
     return FilterState(
       isLoading: isLoading ?? this.isLoading,
       isSlipNoLoading: isSlipNoLoading ?? this.isSlipNoLoading,
-      isHeadquartersLoading:
-          isHeadquartersLoading ?? this.isHeadquartersLoading,
+      isHeadquartersLoading: isHeadquartersLoading ?? this.isHeadquartersLoading,
       isItemDetailsLoading: isItemDetailsLoading ?? this.isItemDetailsLoading,
       customers: customers ?? this.customers,
       billNumbers: billNumbers ?? this.billNumbers,
@@ -83,16 +84,16 @@ class FilterState extends Equatable {
 
   @override
   List<Object?> get props => [
-        isLoading,
-        isSlipNoLoading,
-        isHeadquartersLoading,
-        isItemDetailsLoading,
-        customers,
-        billNumbers,
-        itemDetails,
-        error,
-        data,
-      ];
+    isLoading,
+    isSlipNoLoading,
+    isHeadquartersLoading,
+    isItemDetailsLoading,
+    customers,
+    billNumbers,
+    itemDetails,
+    error,
+    data,
+  ];
 }
 
 // Bloc
@@ -103,91 +104,74 @@ class FilterBloc extends Bloc<FilterEvent, FilterState> {
     on<FetchCustomersEvent>(_fetchCustomers);
     on<FetchBillNumbersEvent>(_fetchBillNumbers);
     on<FetchItemDetailsEvent>(_fetchItemDetails);
+    on<ResetFormEvent>(_resetForm);
   }
 
-  Future<void> _fetchSlipNo(
-      FetchSlipNoEvent event, Emitter<FilterState> emit) async {
+  Future<void> _fetchSlipNo(FetchSlipNoEvent event, Emitter<FilterState> emit) async {
     emit(state.copyWith(isSlipNoLoading: true));
     try {
       final slipNo = await FilterApiService.fetchSlipNo();
-      final newData = Map<String, dynamic>.from(state.data)
-        ..['slipNo'] = slipNo;
+      final newData = Map<String, dynamic>.from(state.data)..['slipNo'] = slipNo;
       emit(state.copyWith(isSlipNoLoading: false, data: newData));
     } catch (e) {
-      emit(state.copyWith(
-          isSlipNoLoading: false, error: 'Failed to fetch SlipNo: $e'));
+      emit(state.copyWith(isSlipNoLoading: false, error: 'Failed to fetch SlipNo: $e'));
     }
   }
 
-  Future<void> _fetchHeadquarters(
-      FetchHeadquartersEvent event, Emitter<FilterState> emit) async {
+  Future<void> _fetchHeadquarters(FetchHeadquartersEvent event, Emitter<FilterState> emit) async {
     emit(state.copyWith(isHeadquartersLoading: true));
     try {
       final headquarters = await FilterApiService.fetchHeadquarters();
-      final newData = Map<String, dynamic>.from(state.data)
-        ..['headquarters'] = headquarters;
+      final newData = Map<String, dynamic>.from(state.data)..['headquarters'] = headquarters;
       emit(state.copyWith(isHeadquartersLoading: false, data: newData));
     } catch (e) {
-      emit(state.copyWith(
-          isHeadquartersLoading: false,
-          error: 'Failed to fetch Headquarters: $e'));
+      emit(state.copyWith(isHeadquartersLoading: false, error: 'Failed to fetch Headquarters: $e'));
     }
   }
 
-  Future<void> _fetchCustomers(
-      FetchCustomersEvent event, Emitter<FilterState> emit) async {
+  Future<void> _fetchCustomers(FetchCustomersEvent event, Emitter<FilterState> emit) async {
     emit(state.copyWith(isLoading: true));
     try {
       final customers = await FilterApiService.fetchCustomers();
-
       emit(state.copyWith(customers: customers, isLoading: false));
     } catch (e) {
       log('Error fetching customers: $e');
-      emit(
-          state.copyWith(isLoading: false, error: 'Failed to fetch customers'));
+      emit(state.copyWith(isLoading: false, error: 'Failed to fetch customers'));
     }
   }
 
-  Future<void> _fetchBillNumbers(
-      FetchBillNumbersEvent event, Emitter<FilterState> emit) async {
-    emit(state.copyWith(isLoading: true, error: null)); // Update this
+  Future<void> _fetchBillNumbers(FetchBillNumbersEvent event, Emitter<FilterState> emit) async {
+    emit(state.copyWith(isLoading: true, error: null));
     try {
-      final billNumbers =
-          await FilterApiService.fetchBillNumbers(event.customerId);
+      final billNumbers = await FilterApiService.fetchBillNumbers(event.customerId);
       log('Fetched Bill Numbers: $billNumbers');
       if (billNumbers != state.billNumbers) {
-        // Emit only if data has changed
         emit(state.copyWith(billNumbers: billNumbers, isLoading: false));
       }
     } catch (e) {
       log('Error fetching bill numbers: $e');
-      emit(state.copyWith(
-          isLoading: false,
-          error: 'Failed to fetch bill numbers')); // Update this
+      emit(state.copyWith(isLoading: false, error: 'Failed to fetch bill numbers'));
     }
   }
 
-  Future<void> _fetchItemDetails(
-      FetchItemDetailsEvent event, Emitter<FilterState> emit) async {
-    emit(state.copyWith(
-        isItemDetailsLoading: true, error: null)); // Set loading state
+  Future<void> _fetchItemDetails(FetchItemDetailsEvent event, Emitter<FilterState> emit) async {
+    emit(state.copyWith(isItemDetailsLoading: true, error: null));
     try {
-      final itemDetails =
-          await FilterApiService.getItemDetails(event.billNumber);
+      final itemDetails = await FilterApiService.getItemDetails(event.billNumber);
       log('Fetched Item Details: $itemDetails');
       if (itemDetails != state.itemDetails) {
-        // Emit only if data has changed
-        emit(state.copyWith(
-          itemDetails: itemDetails,
-          isItemDetailsLoading: false,
-        ));
+        emit(state.copyWith(itemDetails: itemDetails, isItemDetailsLoading: false));
       }
     } catch (e) {
       log('Error fetching item details: $e');
-      emit(state.copyWith(
-        isItemDetailsLoading: false,
-        error: 'Failed to fetch item details',
-      ));
+      emit(state.copyWith(isItemDetailsLoading: false, error: 'Failed to fetch item details'));
     }
+  }
+
+  Future<void> _resetForm(ResetFormEvent event, Emitter<FilterState> emit) async {
+    emit(const FilterState()); // Reset to initial state
+    add(FetchSlipNoEvent());
+    add(FetchHeadquartersEvent());
+    add(FetchCustomersEvent());
   }
 }

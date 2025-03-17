@@ -74,28 +74,26 @@ class FilterApiService {
 
   // itemDetailapi
 
-  static Future<List<Map<String, dynamic>>> getItemDetails(
-      String invoiceId) async {
+  static Future<List<Map<String, dynamic>>> getItemDetails(String invoiceId) async {
     try {
-      final response = await http
-          .get(Uri.parse('$baseUrl?type=ItemName&InvoiceId=$invoiceId'));
+      final url = Uri.parse('$baseUrl?type=ItemName&InvoiceId=$invoiceId');
+      final response = await http.get(url);
+      print('Api url : $url');
+
       if (response.statusCode == 200) {
         final List<dynamic> rawData = json.decode(response.body);
         if (rawData.isNotEmpty) {
-          return [
-            {
-              'id': rawData[0]['FieldID']?.toString() ?? '',
-              'name': rawData[0]['FieldName']?.toString() ?? '',
-              'hsnCode': rawData[0]['HSNCode']?.toString() ?? '',
-              'mcNo': rawData[0]['MCNo']?.toString() ?? '',
-              'itemRemarks': rawData[0]['itemRemarks']?.toString() ?? '',
-              'withSpareParts': rawData[0]['WithSpareParts']?.toString() ?? '',
-              'amcStartDate': rawData[0]['AMCStartDate']?.toString() ?? '',
-              'amcEndDate': rawData[0]['AMCEndDate']?.toString() ?? '',
-              'installationAddress':
-              rawData[0]['installationAddress']?.toString() ?? '',
-            }
-          ];
+          return rawData.map((item) => {
+            'id': item['FieldID']?.toString() ?? '',
+            'name': item['FieldName']?.toString() ?? '',
+            'hsnCode': item['HSNCode']?.toString() ?? '',
+            'mcNo': item['MCNo']?.toString() ?? '',
+            'itemRemarks': item['ItemRemarks']?.toString() ?? '',
+            'withSpareParts': item['WithSpareParts']?.toString() ?? '',
+            'amcStartDate': item['AMCStartDate']?.toString() ?? '',
+            'amcEndDate': item['AMCEndDate']?.toString() ?? '',
+            'installationAddress': item['InstallationAddress']?.toString() ?? '',
+          }).toList();
         } else {
           throw Exception('No item details found');
         }
@@ -113,43 +111,44 @@ class FilterApiService {
     required Map<String, String> topSectionData,
     required Map<String, dynamic> mediumSectionData,
     required Map<String, String> bottomSectionData,
-    required List<DateTime> serviceDates,
   }) async {
-    // Ensure this is always a POST request
-    final url = Uri.parse('http://localhost/addWarratnty.php'); // Use your machine's IP address
+    final url = Uri.parse('$postUrl');
+
+    int sno1Counter = 1;
 
     // Prepare the request body
     final Map<String, dynamic> requestBody = {
       'firstArray': (mediumSectionData['items'] as List<dynamic>?)?.map((item) {
+        int currentSNo = item['SNo'] ?? 0;
         return {
-          'itemName': item['itemName'] ?? '',
-          'mcNo': item['mcNo'] ?? '',
-          'itemRemarks': item['itemRemarks'] ?? '',
-          'qty': item['qty'] ?? '',
-          'sacHsn': item['sacHsn'] ?? '',
-          'warrantyFrom': item['warrantyFrom'] ?? '',
-          'billNo': item['billNo'] ?? '',
-          'billDate': item['billDate'] ?? '',
-          'installationAddress': item['installationAddress'] ?? '',
-          'toDate': item['toDate'] ?? '',
-          'fromDate':item['fromDate']??'',
-
-
+          'SNo1': sno1Counter++,
+          'SNo': currentSNo,
+          'IsEntryType': item['IsEntryType'] ?? '',
+          'BillNo': item['BillNo'] ?? '',
+          'BillDate': item['BillDate'] ?? '',
+          'InvoiceRecNo': topSectionData['InvoiceRecNo'] ?? '',
+          'ItemNo': item['ItemNo'] ?? '',
+          'MCNo': item['MCNo'] ?? '',
+          'HSNCode': item['HSNCode'] ?? '',
+          'Qty': item['Qty'] ?? '',
+          'AMCStartDate': item['AMCStartDate'] ?? '',
+          'AMCEndDate': item['AMCEndDate'] ?? '',
+          'WithSpareParts': item['WithSpareParts'] ?? '',
+          'InstallationAddress': item['InstallationAddress'] ?? '',
+          'ItemRemarks': bottomSectionData['remarks'] ?? '',
         };
       }).toList() ?? [],
-      // Keep serviceDates linked to item index
-      'secondArray': (mediumSectionData['items'] as List<dynamic>?)
-          ?.asMap()
-          .entries
-          .expand((entry) {
-        int itemIndex = entry.key; // Get the index of the item
-        var item = entry.value;
-        return (item['serviceDates'] as List<dynamic>?)
-            ?.map((date) => {'itemIndex': itemIndex, 'date': date.toString()}) ??
-            [];
-      })
-          .toList() ?? [],
 
+      'secondArray': (mediumSectionData['items'] as List<dynamic>?)
+          ?.expand((item) {
+        int sno = item['SNo'] ?? 0;
+        return (item['serviceDates'] as List<dynamic>?)?.map((date) {
+          return {
+            'SNo': sno,
+            'ServiceDate': date.toString(),
+          };
+        }) ?? [];
+      }).toList() ?? [],
       'UserCode': double.tryParse(topSectionData['userCode'] ?? '1.0'),
       'CompanyCode': double.tryParse(topSectionData['companyCode'] ?? '1.0'),
       'RecNo': double.tryParse(topSectionData['recNo'] ?? '1.0'),
@@ -160,39 +159,27 @@ class FilterApiService {
       'Remarks': bottomSectionData['remarks'] ?? '',
     };
 
-    // Print the request body for debugging
     print('Request Body: ${json.encode(requestBody)}');
 
     try {
-      // Enforce POST request
       final response = await http.post(
         url,
-        // headers: {
-        //   'Content-Type': 'application/json',
-        //   'Access-Control-Allow-Origin': '*',
-        //   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        //   'Access-Control-Allow-Headers': 'Content-Type',
-        // },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode(requestBody),
       );
 
-      // Print the response status code and body
       print('Response Status Code: ${response.statusCode}');
       print('Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
-        return responseData;
+        return json.decode(response.body);
       } else {
         throw Exception('Failed to save data: ${response.statusCode}');
       }
     } catch (e) {
-      // Print the error
-      print('Error Type: ${e.runtimeType}');
-      print('Error Message: ${e.toString()}');
+      print('Error: $e');
       throw Exception('Error sending data: $e');
     }
   }
 }
-
 
