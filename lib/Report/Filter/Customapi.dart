@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart'; // Add this for date formatting
+import 'package:intl/intl.dart';
+import 'package:warrantyreport/Report/Filter/TopSection.dart'; // Add this for date formatting
 
 class FilterApiService {
   static const String baseUrl = 'http://localhost/allWarrantyGetAPI.php';
@@ -78,6 +79,7 @@ class FilterApiService {
         return {
           'id': item['FieldID'].toString(),
           'name': item['FieldName'].toString(),
+          'BillDate': item['InvoiceDate'].toString(),
         };
       }).toList();
     } else {
@@ -133,8 +135,8 @@ class FilterApiService {
         return {
           'SNo': currentSNo,
           'IsEntryType': item['IsEntryType'] ?? '',
-          'BillNo': item['BillNo'] ?? '',
-          'BillDate': formatDate(item['BillDate'] ?? ''), // Format date
+          'BillNo':topSectionData['BillNo'] ?? '',
+          'BillDate': topSectionData['BillDate'] ?? '',
           'InvoiceRecNo': topSectionData['InvoiceRecNo'] ?? '',
           'ItemNo': item['ItemNo'] ?? '',
           'MCNo': item['MCNo'] ?? '',
@@ -144,7 +146,7 @@ class FilterApiService {
           'AMCEndDate': formatDate(item['AMCEndDate'] ?? ''),     // Format date
           'WithSpareParts': item['WithSpareParts'] ?? '',
           'InstallationAddress': item['InstallationAddress'] ?? '',
-          'ItemRemarks': bottomSectionData['remarks'] ?? '',
+          'ItemRemarks': item['itemRemarks'] ?? '',
         };
       }).toList() ?? [],
 

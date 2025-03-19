@@ -197,6 +197,7 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
       'BillDate': controllers['BillDate']!.text,
       'ItemNo': selectedItem?['id']?.toString() ?? '',
       'MCNo': controllers['MCNo']!.text,
+      'itemRemarks': controllers['itemRemarks']!.text,
       'HSNCode': controllers['HSNCode']!.text,
       'Qty': controllers['Qty']!.text,
       'AMCStartDate': controllers['AMCStartDate']!.text,

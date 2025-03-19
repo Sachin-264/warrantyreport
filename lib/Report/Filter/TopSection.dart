@@ -237,12 +237,27 @@ class _TopSectionState extends State<TopSection> {
   void _updateData() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = context.read<FilterBloc>().state;
+      String billNo = '';
+      String billDate = '';
+
+      // Fetch BillNo and BillDate if a bill is selected
+      if (_selectedBillId != null && state.billNumbers.isNotEmpty) {
+        final selectedBill = state.billNumbers.firstWhere(
+              (bill) => bill['id'] == _selectedBillId,
+          orElse: () => {'name': '', 'BillDate': ''},
+        );
+        billNo = selectedBill['name'] ?? '';
+        billDate = selectedBill['BillDate'] ?? '';
+      }
+
       widget.onDataChanged({
         'slipNo': state.data['slipNo']?[0]['NextCode'] ?? '',
         'hqCode': _selectedHeadquarter ?? '',
         'entryDate': _dateController.text,
         'InvoiceRecNo': _selectedBillId ?? '',
         'accountCode': _selectedCustomerId ?? '',
+        'BillNo': billNo, // Add BillNo
+        'BillDate': billDate, // Add BillDate
       });
     });
   }
