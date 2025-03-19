@@ -1,10 +1,23 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart'; // Add this for date formatting
 
 class FilterApiService {
   static const String baseUrl = 'http://localhost/allWarrantyGetAPI.php';
   static const String postUrl = 'http://localhost/addWarratnty.php';
+
+  // Helper function to format dates to "DD-MMM-YYYY"
+  static String formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd-MMM-yyyy').format(date); // e.g., "19-Mar-2025"
+    } catch (e) {
+      log('Date parsing error: $e');
+      return dateStr; // Return original string if parsing fails
+    }
+  }
 
   static Future<List<Map<String, String>>> fetchSlipNo() async {
     final response = await http.get(Uri.parse('$baseUrl?type=SlipNo'));
@@ -72,8 +85,6 @@ class FilterApiService {
     }
   }
 
-  // itemDetailapi
-
   static Future<List<Map<String, dynamic>>> getItemDetails(String invoiceId) async {
     try {
       final url = Uri.parse('$baseUrl?type=ItemName&InvoiceId=$invoiceId');
@@ -90,8 +101,8 @@ class FilterApiService {
             'mcNo': item['MCNo']?.toString() ?? '',
             'itemRemarks': item['ItemRemarks']?.toString() ?? '',
             'withSpareParts': item['WithSpareParts']?.toString() ?? '',
-            'amcStartDate': item['AMCStartDate']?.toString() ?? '',
-            'amcEndDate': item['AMCEndDate']?.toString() ?? '',
+            'amcStartDate': formatDate(item['AMCStartDate']?.toString()), // Format date
+            'amcEndDate': formatDate(item['AMCEndDate']?.toString()),     // Format date
             'installationAddress': item['InstallationAddress']?.toString() ?? '',
           }).toList();
         } else {
@@ -106,7 +117,6 @@ class FilterApiService {
     }
   }
 
-
   static Future<Map<String, dynamic>> saveWarrantyData({
     required Map<String, String> topSectionData,
     required Map<String, dynamic> mediumSectionData,
@@ -116,7 +126,7 @@ class FilterApiService {
 
     int sno1Counter = 1;
 
-    // Prepare the request body
+    // Prepare the request body with formatted dates
     final Map<String, dynamic> requestBody = {
       'firstArray': (mediumSectionData['items'] as List<dynamic>?)?.map((item) {
         int currentSNo = item['SNo'] ?? 0;
@@ -124,14 +134,14 @@ class FilterApiService {
           'SNo': currentSNo,
           'IsEntryType': item['IsEntryType'] ?? '',
           'BillNo': item['BillNo'] ?? '',
-          'BillDate': item['BillDate'] ?? '',
+          'BillDate': formatDate(item['BillDate'] ?? ''), // Format date
           'InvoiceRecNo': topSectionData['InvoiceRecNo'] ?? '',
           'ItemNo': item['ItemNo'] ?? '',
           'MCNo': item['MCNo'] ?? '',
           'HSNCode': item['HSNCode'] ?? '',
           'Qty': item['Qty'] ?? '',
-          'AMCStartDate': item['AMCStartDate'] ?? '',
-          'AMCEndDate': item['AMCEndDate'] ?? '',
+          'AMCStartDate': formatDate(item['AMCStartDate'] ?? ''), // Format date
+          'AMCEndDate': formatDate(item['AMCEndDate'] ?? ''),     // Format date
           'WithSpareParts': item['WithSpareParts'] ?? '',
           'InstallationAddress': item['InstallationAddress'] ?? '',
           'ItemRemarks': bottomSectionData['remarks'] ?? '',
@@ -145,17 +155,17 @@ class FilterApiService {
           return {
             'SNo': sno,
             'SNo1': sno1Counter++,
-            'TentativeServiceDate': date.toString(),
+            'TentativeServiceDate': formatDate(date.toString()), // Format date
           };
         }) ?? [];
       }).toList() ?? [],
       'UserCode': double.tryParse(topSectionData['userCode'] ?? '1.0'),
-      'CompanyCode': double.tryParse(topSectionData['companyCode'] ?? '1.0'),
+      'CompanyCode': double.tryParse(topSectionData['companyCode'] ?? '101'),
       'RecNo': double.tryParse(topSectionData['recNo'] ?? '1.0'),
-      'EntryDate': topSectionData['entryDate'] ?? '',
+      'EntryDate': formatDate(topSectionData['entryDate'] ?? ''), // Format date
       'SlipNo': double.tryParse(topSectionData['slipNo'] ?? '1.0'),
       'HQCode': double.tryParse(topSectionData['hqCode'] ?? '1.0'),
-      'AccountCode':topSectionData['accountCode'] ?? '1.0',
+      'AccountCode': topSectionData['accountCode'] ?? '1.0',
       'Remarks': bottomSectionData['remarks'] ?? '',
     };
 
@@ -182,4 +192,3 @@ class FilterApiService {
     }
   }
 }
-
