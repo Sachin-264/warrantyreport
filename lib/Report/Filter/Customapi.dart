@@ -121,7 +121,6 @@ class FilterApiService {
       'firstArray': (mediumSectionData['items'] as List<dynamic>?)?.map((item) {
         int currentSNo = item['SNo'] ?? 0;
         return {
-          'SNo1': sno1Counter++,
           'SNo': currentSNo,
           'IsEntryType': item['IsEntryType'] ?? '',
           'BillNo': item['BillNo'] ?? '',
@@ -145,7 +144,8 @@ class FilterApiService {
         return (item['serviceDates'] as List<dynamic>?)?.map((date) {
           return {
             'SNo': sno,
-            'ServiceDate': date.toString(),
+            'SNo1': sno1Counter++,
+            'TentativeServiceDate': date.toString(),
           };
         }) ?? [];
       }).toList() ?? [],
@@ -155,7 +155,7 @@ class FilterApiService {
       'EntryDate': topSectionData['entryDate'] ?? '',
       'SlipNo': double.tryParse(topSectionData['slipNo'] ?? '1.0'),
       'HQCode': double.tryParse(topSectionData['hqCode'] ?? '1.0'),
-      'AccountCode': double.tryParse(topSectionData['accountCode'] ?? '1.0'),
+      'AccountCode':topSectionData['accountCode'] ?? '1.0',
       'Remarks': bottomSectionData['remarks'] ?? '',
     };
 

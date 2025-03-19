@@ -242,6 +242,7 @@ class _TopSectionState extends State<TopSection> {
         'hqCode': _selectedHeadquarter ?? '',
         'entryDate': _dateController.text,
         'InvoiceRecNo': _selectedBillId ?? '',
+        'accountCode': _selectedCustomerId ?? '',
       });
     });
   }
