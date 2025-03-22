@@ -1,42 +1,41 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:universal_html/js.dart';
+import 'package:warrantyreport/Report/EditPages/EditBloc.dart';
+import 'package:warrantyreport/Report/EditPages/editdetail_bloc.dart';
 import 'package:warrantyreport/Report/Filter/filterbloc.dart';
-import 'package:warrantyreport/Report/Filter/TopSection.dart';
-import 'package:warrantyreport/Report/Warranty/BlocWarranty.dart';
-import 'package:warrantyreport/Report/Warranty/Warranty.dart';
-import 'package:warrantyreport/dummybloc.dart';
-import 'package:warrantyreport/dummypage.dart';
+
+
+import 'complaint_page.dart';
 
 void main() {
-  FlutterError.onError = (FlutterErrorDetails details) {
-    // Ignore ParentDataWidget errors (or log them elsewhere)
-    if (!details.exceptionAsString().contains('ParentDataWidget')) {
-      FlutterError.dumpErrorToConsole(details);
-    }
-  };
-  runApp(const MyApp());
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider<FilterBloc>(create: (context) => FilterBloc()),
+            BlocProvider<EditBloc>(create: (context) => EditBloc()),
+        BlocProvider<Editdetailbloc>(create: (context) => Editdetailbloc()),
+
+  ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: MultiBlocProvider(
-        providers: [
-          BlocProvider<DummyBloc>(
-            create: (context) => DummyBloc(),
-          ),
-          BlocProvider<FilterBloc>(
-            create: (context) => FilterBloc(),
-          ),
-          BlocProvider<WarrantyBloc>(
-            create: (context) =>  WarrantyBloc(),
-          ),
-        ],
-        child: FilterPage(),
+      debugShowCheckedModeBanner: false,
+      title: 'Complaint Entry App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      home: ComplaintPage(),
     );
   }
 }

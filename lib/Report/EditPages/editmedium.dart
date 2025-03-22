@@ -1,20 +1,23 @@
+// EditMediumSection.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:warrantyreport/Report/Filter/filterbloc.dart';
 
-class MediumSection extends StatefulWidget {
+import 'editdetail_bloc.dart';
+
+
+class EditMediumSection extends StatefulWidget {
   final Function(Map<String, dynamic>) onDataChanged;
 
-  const MediumSection({Key? key, required this.onDataChanged}) : super(key: key);
+  const EditMediumSection({Key? key, required this.onDataChanged}) : super(key: key);
 
   @override
-  _MediumSectionState createState() => _MediumSectionState();
+  _EditMediumSectionState createState() => _EditMediumSectionState();
 }
 
-class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveClientMixin {
+class _EditMediumSectionState extends State<EditMediumSection> with AutomaticKeepAliveClientMixin {
   late final Map<String, TextEditingController> controllers;
   bool isEditing = false;
   int? selectedIndex;
@@ -22,7 +25,6 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
   List<Map<String, dynamic>> items = [];
   List<DateTime> serviceDates = [];
   Timer? _updateTimer;
-  Map<String, dynamic>? selectedItem;
 
   @override
   bool get wantKeepAlive => true;
@@ -36,12 +38,18 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
   void initState() {
     super.initState();
     _initializeControllers();
-    context.read<FilterBloc>().stream.listen((state) {
-      if (state.itemDetails.isNotEmpty && selectedItem == null && mounted) {
+    context.read<Editdetailbloc>().stream.listen((state) {
+      if (state.initialData.isNotEmpty && items.isEmpty && mounted) {
         setState(() {
-          selectedItem = state.itemDetails[0];
-          _updateFields(state.itemDetails[0]);
+          items = List<Map<String, dynamic>>.from(state.initialData['items']);
+          serviceDates = (state.initialData['serviceDates'] as List)
+              .map((date) => DateTime.parse(date['TentativeServiceDate']))
+              .toList();
+          if (items.isNotEmpty) {
+            _updateFields(items[0]);
+          }
         });
+        _updateParentData();
       }
     });
   }
@@ -52,11 +60,10 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
       'MCNo': TextEditingController(),
       'itemRemarks': TextEditingController(),
       'Qty': TextEditingController(),
-      'warrantyFrom': TextEditingController(),
-      'BillNo': TextEditingController(),
       'HSNCode': TextEditingController(),
       'AMCStartDate': TextEditingController(),
       'AMCEndDate': TextEditingController(),
+      'BillNo': TextEditingController(),
       'BillDate': TextEditingController(),
       'InstallationAddress': TextEditingController(),
       'serviceDate': TextEditingController(),
@@ -72,7 +79,6 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
       selectedSparePartsOption = 'Yes';
       items.clear();
       serviceDates.clear();
-      selectedItem = null;
     });
     _updateParentData();
   }
@@ -88,7 +94,7 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
     _updateTimer?.cancel();
     _updateTimer = Timer(const Duration(milliseconds: 300), () {
       if (mounted) {
-        widget.onDataChanged({'items': items});
+        widget.onDataChanged({'items': items, 'serviceDates': serviceDates});
       }
     });
   }
@@ -173,14 +179,17 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
   void _updateFields(Map<String, dynamic> item) {
     if (!mounted) return;
     setState(() {
-      selectedItem = item;
-      controllers['itemName']?.text = item['name'] ?? '';
-      controllers['MCNo']?.text = item['mcNo'] ?? '';
-      controllers['itemRemarks']?.text = item['itemRemarks'] ?? '';
-      controllers['HSNCode']?.text = item['hsnCode'] ?? '';
-      controllers['AMCStartDate']?.text = item['amcStartDate'] ?? '';
-      controllers['AMCEndDate']?.text = item['amcEndDate'] ?? '';
-      controllers['InstallationAddress']?.text = item['installationAddress'] ?? '';
+      controllers['itemName']?.text = item['ItemName'] ?? '';
+      controllers['MCNo']?.text = item['MCNo'] ?? '';
+      controllers['itemRemarks']?.text = item['ItemRemarks'] ?? '';
+      controllers['HSNCode']?.text = item['HSNCode'] ?? '';
+      controllers['AMCStartDate']?.text = item['AMCStartDate'] ?? '';
+      controllers['AMCEndDate']?.text = item['AMCEndDate'] ?? '';
+      controllers['InstallationAddress']?.text = item['InstallationAddress'] ?? '';
+      controllers['Qty']?.text = item['Qty'] ?? '';
+      controllers['BillNo']?.text = item['BillNo'] ?? '';
+      controllers['BillDate']?.text = item['BillDate'] ?? '';
+      selectedSparePartsOption = item['WithSpareParts'] ?? 'Yes';
     });
   }
 
@@ -192,21 +201,20 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
     }
 
     final formData = {
-      'SNo': items.length + 1,
+      'SNo': (selectedIndex ?? items.length + 1).toString(),
       'IsEntryType': '',
-      'itemName': controllers['itemName']!.text,
+      'ItemName': controllers['itemName']!.text,
       'BillNo': controllers['BillNo']!.text,
       'BillDate': controllers['BillDate']!.text,
-      'ItemNo': selectedItem?['id']?.toString() ?? '',
+      'ItemNo': items.isNotEmpty ? items[selectedIndex ?? items.length]['ItemNo'] : '',
       'MCNo': controllers['MCNo']!.text,
-      'itemRemarks': controllers['itemRemarks']!.text,
+      'ItemRemarks': controllers['itemRemarks']!.text,
       'HSNCode': controllers['HSNCode']!.text,
       'Qty': controllers['Qty']!.text,
       'AMCStartDate': controllers['AMCStartDate']!.text,
       'AMCEndDate': controllers['AMCEndDate']!.text,
       'WithSpareParts': selectedSparePartsOption,
       'InstallationAddress': controllers['InstallationAddress']!.text,
-      'serviceDates': serviceDates.map((date) => date.toIso8601String()).toList(),
     };
 
     if (!mounted) return;
@@ -218,7 +226,6 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
       }
       isEditing = false;
       selectedIndex = null;
-      serviceDates.clear();
     });
 
     controllers.values.forEach((c) => c.clear());
@@ -226,53 +233,12 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
   }
 
   void _editItem(int index) {
-    final editedItem = items[index];
-    final itemId = editedItem['ItemNo'];
-    final itemDetails = context.read<FilterBloc>().state.itemDetails;
-
-    Map<String, dynamic>? matchedItem;
-    for (var item in itemDetails) {
-      if (item['id']?.toString() == itemId) {
-        matchedItem = item;
-        break;
-      }
-    }
-
     if (!mounted) return;
     setState(() {
       isEditing = true;
       selectedIndex = index;
-
-      if (matchedItem != null) {
-        selectedItem = matchedItem;
-        _updateFields(matchedItem);
-      }
-
-      controllers['itemName']!.text = editedItem['itemName'] ?? '';
-      controllers['MCNo']!.text = editedItem['MCNo'] ?? '';
-      controllers['itemRemarks']!.text = editedItem['itemRemarks'] ?? '';
-      controllers['Qty']!.text = editedItem['Qty'] ?? '';
-      controllers['HSNCode']!.text = editedItem['HSNCode'] ?? '';
-      controllers['AMCStartDate']!.text = editedItem['AMCStartDate'] ?? '';
-      controllers['AMCEndDate']!.text = editedItem['AMCEndDate'] ?? '';
-      controllers['BillNo']!.text = editedItem['BillNo'] ?? '';
-      controllers['BillDate']!.text = editedItem['BillDate'] ?? '';
-      controllers['InstallationAddress']!.text = editedItem['InstallationAddress'] ?? '';
-
-      selectedSparePartsOption = editedItem['WithSpareParts'] ?? 'Yes';
-
-      serviceDates = [];
-      if (editedItem['serviceDates'] != null) {
-        for (var date in editedItem['serviceDates']) {
-          if (date is String) {
-            serviceDates.add(DateTime.parse(date));
-          } else if (date is DateTime) {
-            serviceDates.add(date);
-          }
-        }
-      }
+      _updateFields(items[index]);
     });
-
     _updateParentData();
   }
 
@@ -368,66 +334,10 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
     );
   }
 
-
-  Widget _buildItemNameField(List<Map<String, dynamic>> itemDetails) {
-    if (isEditing) {
-      return _buildTextField(label: "Item Name:", controller: controllers['itemName']!, widthFactor: 0.48);
-    } else {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Item Name:",
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: MediaQuery.of(context).size.width * 0.48,
-            child: itemDetails.isEmpty
-                ? TextField(
-              enabled: false, // Makes it read-only
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                hintText: "No items available",
-                hintStyle: GoogleFonts.poppins(color: Colors.grey),
-              ),
-            )
-                : DropdownButtonFormField<Map<String, dynamic>>(
-              value: selectedItem != null &&
-                  itemDetails.any((item) => item['id']?.toString() == selectedItem?['id']?.toString())
-                  ? itemDetails.firstWhere((item) => item['id']?.toString() == selectedItem?['id']?.toString())
-                  : itemDetails[0],
-              items: itemDetails.map((item) {
-                return DropdownMenuItem<Map<String, dynamic>>(
-                  value: item,
-                  child: Text(
-                    item['name'] ?? 'Unnamed Item',
-                    style: GoogleFonts.poppins(),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                );
-              }).toList(),
-              onChanged: (Map<String, dynamic>? newItem) {
-                if (newItem != null && mounted) {
-                  setState(() {
-                    _updateFields(newItem);
-                  });
-                }
-              },
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              isExpanded: true,
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return BlocListener<FilterBloc, FilterState>(
+    return BlocListener<Editdetailbloc, EditState>(
       listener: (context, state) {
         if (!state.isLoading && state.billNumbers.isEmpty && state.itemDetails.isEmpty) {
           _resetFields();
@@ -447,7 +357,7 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
                   ),
                   const SizedBox(width: 16),
                   SizedBox(
-                    width: MediaQuery.of(context).size.width - 732, // Adjusted to avoid overflow
+                    width: MediaQuery.of(context).size.width - 732,
                     child: _buildItemsTableColumn(),
                   ),
                 ],
@@ -469,81 +379,71 @@ class _MediumSectionState extends State<MediumSection> with AutomaticKeepAliveCl
           Text("Item Detail",
               style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue[900])),
           const SizedBox(height: 16),
-          BlocSelector<FilterBloc, FilterState, List<Map<String, dynamic>>>(
-            selector: (state) => state.itemDetails,
-            builder: (context, itemDetails) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildItemNameField(itemDetails),
-                  _buildTextField(label: "M/C No:", controller: controllers['MCNo']!, widthFactor: 0.48),
-                  _buildTextField(
-                      label: "Item Remarks:",
-                      controller: controllers['itemRemarks']!,
-                      isMultiLine: true,
-                      widthFactor: 0.48),
-                  _buildFormRow([
+          _buildTextField(label: "Item Name:", controller: controllers['itemName']!, widthFactor: 0.48),
+          _buildTextField(label: "M/C No:", controller: controllers['MCNo']!, widthFactor: 0.48),
+          _buildTextField(
+              label: "Item Remarks:",
+              controller: controllers['itemRemarks']!,
+              isMultiLine: true,
+              widthFactor: 0.48),
+          _buildFormRow([
+            _buildTextField(
+              label: "Qty:",
+              controller: controllers['Qty']!,
+              widthFactor: 0.222,
+              keyboardType: TextInputType.number,
+            ),
+            _buildTextField(
+              label: "SAC/HSN:",
+              controller: controllers['HSNCode']!,
+              widthFactor: 0.222,
+            ),
+          ]),
+          _buildFormRow([
+            _buildTextField(
+                label: "From Date:",
+                controller: controllers['AMCStartDate']!,
+                widthFactor: 0.222,
+                isDate: true),
+            _buildTextField(
+                label: "To Date:",
+                controller: controllers['AMCEndDate']!,
+                widthFactor: 0.222,
+                isDate: true),
+          ]),
+          _buildSparePartsDropdown(),
+          _buildTextField(
+              label: "Installation Address:",
+              controller: controllers['InstallationAddress']!,
+              isMultiLine: true,
+              widthFactor: 0.48),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                flex: 3,
+                child: Column(
+                  children: [
                     _buildTextField(
-                      label: "Qty:",
-                      controller: controllers['Qty']!,
-                      widthFactor: 0.222,
-                      keyboardType: TextInputType.number,
+                      label: "Tentative Service Date:",
+                      controller: controllers['serviceDate']!,
+                      widthFactor: 1,
+                      isDate: true,
                     ),
-                    _buildTextField(
-                      label: "SAC/HSN:",
-                      controller: controllers['HSNCode']!,
-                      widthFactor: 0.222,
-                    ),
-                  ]),
-                  _buildFormRow([
-                    _buildTextField(
-                        label: "From Date:",
-                        controller: controllers['AMCStartDate']!,
-                        widthFactor: 0.222,
-                        isDate: true),
-                    _buildTextField(
-                        label: "To Date:",
-                        controller: controllers['AMCEndDate']!,
-                        widthFactor: 0.222,
-                        isDate: true),
-                  ]),
-                  _buildSparePartsDropdown(),
-                  _buildTextField(
-                      label: "Installation Address:",
-                      controller: controllers['InstallationAddress']!,
-                      isMultiLine: true,
-                      widthFactor: 0.48),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                        flex: 3,
-                        child: Column(
-                          children: [
-                            _buildTextField(
-                              label: "Tentative Service Date:",
-                              controller: controllers['serviceDate']!,
-                              widthFactor: 1,
-                              isDate: true,
-                            ),
-                            _buildDateButtons(),
-                          ],
-                        ),
-                      ),
-                      Flexible(
-                        flex: 4,
-                        child: ServiceDateTable(
-                          key: ValueKey(serviceDates.hashCode),
-                          dates: serviceDates,
-                          onEdit: _editDate,
-                          onDelete: _deleteDate,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
+                    _buildDateButtons(),
+                  ],
+                ),
+              ),
+              Flexible(
+                flex: 4,
+                child: ServiceDateTable(
+                  key: ValueKey(serviceDates.hashCode),
+                  dates: serviceDates,
+                  onEdit: _editDate,
+                  onDelete: _deleteDate,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -620,7 +520,7 @@ class ItemTable extends StatelessWidget {
                     (states) => index.isEven ? Colors.white : Colors.grey.shade100,
               ),
               cells: [
-                DataCell(SizedBox(width: 200, child: Text(item['itemName'] ?? ''))),
+                DataCell(SizedBox(width: 200, child: Text(item['ItemName'] ?? ''))),
                 DataCell(SizedBox(width: 100, child: Text(item['MCNo'] ?? ''))),
                 DataCell(SizedBox(width: 100, child: Text(item['HSNCode'] ?? ''))),
                 DataCell(SizedBox(width: 60, child: Center(child: Text(item['Qty'] ?? '')))),
