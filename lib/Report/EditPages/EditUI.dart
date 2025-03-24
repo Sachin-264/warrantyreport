@@ -1,10 +1,8 @@
-// edit_ui.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'EditBloc.dart';
-import 'EditDetails.dart';
-// Make sure to import the edit_details.dart file
+import 'EditDetails/EditFilter.dart';
 
 class EditUI extends StatelessWidget {
   const EditUI({Key? key}) : super(key: key);
@@ -202,7 +200,7 @@ class EditUI extends StatelessWidget {
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: SizedBox(
-                              width: MediaQuery.of(context).size.width - 32, // Full width minus padding
+                              width: MediaQuery.of(context).size.width - 32,
                               child: SingleChildScrollView(
                                 child: DataTable(
                                   columnSpacing: 20,
@@ -244,12 +242,12 @@ class EditUI extends StatelessWidget {
                                               style: TextButton.styleFrom(
                                                 foregroundColor: Colors.blue[900],
                                               ),
-                                              onPressed: () {
-                                                Navigator.push(
+                                              onPressed: () async {
+                                                final result = await Navigator.push(
                                                   context,
                                                   PageRouteBuilder(
                                                     pageBuilder: (context, animation, secondaryAnimation) =>
-                                                        EditPage(
+                                                        EditFilterPage(
                                                           userCode: '1',
                                                           companyCode: '101',
                                                           recNo: item['RecNo'],
@@ -268,6 +266,10 @@ class EditUI extends StatelessWidget {
                                                     },
                                                   ),
                                                 );
+
+                                                if (result == true) {
+                                                  context.read<EditBloc>().add(SubmitEvent());
+                                                }
                                               },
                                               child: Text('Edit', style: GoogleFonts.poppins()),
                                             ),

@@ -1,4 +1,3 @@
-// edit_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -60,6 +59,8 @@ class DeleteEvent extends EditEvent {
   final String recNo;
   DeleteEvent(this.recNo);
 }
+
+class LoadDataEvent extends EditEvent {}
 
 class EditBloc extends Bloc<EditEvent, EditState> {
   EditBloc() : super(EditState(
@@ -152,6 +153,33 @@ class EditBloc extends Bloc<EditEvent, EditState> {
         emit(state.copyWith(
           isLoading: false,
           message: 'Error deleting record: $e',
+          isError: true,
+        ));
+      }
+    });
+
+    on<LoadDataEvent>((event, emit) async {
+      emit(state.copyWith(isLoading: true, message: ''));
+      try {
+        final response = await http.get(
+          Uri.parse(
+            'http://localhost/sp_GetWarrantyAMCMasterDetails.php?UserCode=1&CompanyCode=101&FromDate=${state.fromDate}&ToDate=${state.toDate}&AccountCode',
+          ),
+        );
+        final jsonData = json.decode(response.body);
+        final data = (jsonData['data'] as List<dynamic>)
+            .map((item) => item as Map<String, dynamic>)
+            .toList();
+        emit(state.copyWith(
+          data: data,
+          isLoading: false,
+          message: 'Data reloaded successfully',
+          isError: false,
+        ));
+      } catch (e) {
+        emit(state.copyWith(
+          isLoading: false,
+          message: 'Error reloading data',
           isError: true,
         ));
       }

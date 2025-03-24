@@ -1,11 +1,10 @@
-// EditBottomSection.dart
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'editdetail_bloc.dart';
-
+import 'editfilterbloc.dart';
 
 class EditBottomSection extends StatefulWidget {
   final Function(Map<String, String>) onDataChanged;
@@ -13,10 +12,10 @@ class EditBottomSection extends StatefulWidget {
   const EditBottomSection({Key? key, required this.onDataChanged}) : super(key: key);
 
   @override
-  _EditBottomSectionState createState() => _EditBottomSectionState();
+  EditBottomSectionState createState() => EditBottomSectionState(); // Make the state class public
 }
 
-class _EditBottomSectionState extends State<EditBottomSection> with AutomaticKeepAliveClientMixin {
+class EditBottomSectionState extends State<EditBottomSection> with AutomaticKeepAliveClientMixin {
   final TextEditingController _remarksController = TextEditingController();
   Timer? _debounceTimer;
 
@@ -26,25 +25,43 @@ class _EditBottomSectionState extends State<EditBottomSection> with AutomaticKee
   @override
   void initState() {
     super.initState();
+
+
     _remarksController.addListener(_onRemarksChanged);
-    context.read<Editdetailbloc>().stream.listen((state) {
-      if (state.initialData.isNotEmpty && mounted) {
+
+    // Listen to the state changes in the bloc
+    context.read<EditFilterBloc>().stream.listen((state) {
+
+
+      if (state.warrantyData != null && state.warrantyData!['topSection'] != null) {
+
+        // Set the remarks from the loaded warranty data
         setState(() {
-          _remarksController.text = state.initialData['header']['Remarks'] ?? '';
+          _remarksController.text = state.warrantyData!['topSection']['Remarks'] ?? '';
+
         });
+      } else {
+
       }
     });
   }
 
   void _resetFields() {
+
     setState(() {
       _remarksController.clear();
     });
     widget.onDataChanged({'remarks': ''});
   }
 
+  // Public method to clear fields
+  void clearFields() {
+    _resetFields();
+  }
+
   @override
   void dispose() {
+
     _remarksController.removeListener(_onRemarksChanged);
     _remarksController.dispose();
     _debounceTimer?.cancel();
@@ -55,6 +72,7 @@ class _EditBottomSectionState extends State<EditBottomSection> with AutomaticKee
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
+
       widget.onDataChanged({'remarks': _remarksController.text});
     });
   }
@@ -62,9 +80,12 @@ class _EditBottomSectionState extends State<EditBottomSection> with AutomaticKee
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return BlocListener<Editdetailbloc, EditState>(
+
+    return BlocListener<EditFilterBloc, EditFilterState>(
       listener: (context, state) {
-        if (!state.isLoading && state.billNumbers.isEmpty && state.itemDetails.isEmpty) {
+        // Only reset fields if warrantyData is null or empty
+        if (!state.isLoading && state.warrantyData == null) {
+
           _resetFields();
         }
       },
@@ -95,6 +116,25 @@ class _EditBottomSectionState extends State<EditBottomSection> with AutomaticKee
                 fillColor: Colors.white,
               ),
             ),
+            // const SizedBox(height: 10),
+            // ElevatedButton(
+            //   onPressed: _resetFields,
+            //   style: ElevatedButton.styleFrom(
+            //     backgroundColor: Colors.red,
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(10),
+            //     ),
+            //     minimumSize: const Size(100, 45),
+            //   ),
+            //   child: Text(
+            //     'Cancel',
+            //     style: GoogleFonts.poppins(
+            //       color: Colors.white,
+            //       fontSize: 16,
+            //       fontWeight: FontWeight.bold,
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
